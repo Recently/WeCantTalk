@@ -18,6 +18,9 @@ KOKORO_API_URL = os.getenv('KOKORO_API_URL')
 DEFAULT_VOICE_ID = os.getenv('VOICE_ID')
 MODEL_ID = os.getenv('MODEL_ID')
 
+# Runtime-configurable language code
+current_lang_code = None
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
@@ -44,7 +47,7 @@ def make_payload(model, voice, message):
         "speed": 1,
         "stream": False,
         "return_download_link": False,
-        "lang_code": None,
+        "lang_code": current_lang_code,
         "normalization_options": {
             "normalize": True,
             "unit_normalization": False,
@@ -88,7 +91,8 @@ async def handle_speech(ctx, model, voice, message):
         source = discord.FFmpegPCMAudio(audio_filename)
         voice_client.play(source)
 
-        await ctx.send(f"Playing your message with voice `{voice}`!")
+        lang_note = f" (lang: `{current_lang_code}`)" if current_lang_code else ""
+        await ctx.send(f"Playing your message with voice `{voice}`{lang_note}!")
 
     except Exception as e:
         print("Unexpected error:", e)
@@ -115,6 +119,16 @@ async def listvoices(ctx):
     except Exception as e:
         print("Error fetching voice list:", e)
         await ctx.send("Could not retrieve voice list.")
+
+@bot.command()
+async def setlang(ctx, lang: str):
+    global current_lang_code
+    if lang.lower() in ["none", "reset", "clear"]:
+        current_lang_code = None
+        await ctx.send("Language setting cleared. Now using default language behavior.")
+    else:
+        current_lang_code = lang
+        await ctx.send(f"Language code set to `{lang}`.")
 
 @bot.command()
 async def stop(ctx):
@@ -152,7 +166,8 @@ async def raid(ctx, channel_id: int, *, message: str):
 
         source = discord.FFmpegPCMAudio(audio_filename)
         voice_client.play(source)
-        await ctx.send(f"Raided <#{channel_id}> with: `{message}`")
+        lang_note = f" (lang: `{current_lang_code}`)" if current_lang_code else ""
+        await ctx.send(f"Raided <#{channel_id}> with: `{message}`{lang_note}")
     except Exception as e:
         print("Raid error:", e)
         await ctx.send("Something went wrong during the raid.")
@@ -164,10 +179,12 @@ async def wecanttalk(ctx):
         "**!speakwith [voice] [message]** – Use a specific voice to speak.",
         "**!listvoices** – Show available voices from the API.",
         "**!stop** – Stop the current playback in voice chat.",
-        "**!raid [channel_id] [message]** – Speak a message in a specific voice channel by ID."
+        "**!raid [channel_id] [message]** – Speak a message in a specific voice channel by ID.",
+        "**!setlang [lang_code|none]** – Set or reset the language for speech generation."
     ]
     help_text = "\n".join(commands_info)
-    await ctx.send(f"**WeCantTalk Bot Commands:**\n{help_text}")
+    current_lang = f"Current language: `{current_lang_code}`" if current_lang_code else "Language: Default"
+    await ctx.send(f"**WeCantTalk Bot Commands:**\n{help_text}\n\n{current_lang}")
 
 # Console interaction support (Windows-friendly)
 def console_input_loop():
@@ -193,7 +210,7 @@ async def console_speak(voice, message):
     for vc in bot.voice_clients:
         if vc.is_connected():
             try:
-                print(f"Console speaking: '{message}' with voice '{voice}'")
+                print(f"Console speaking: '{message}' with voice '{voice}' lang='{current_lang_code}'")
                 payload = make_payload(MODEL_ID, voice, message)
                 headers = {'Accept': 'audio/mpeg'}
                 response = requests.post(KOKORO_API_URL, json=payload, headers=headers, timeout=10)
