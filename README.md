@@ -5,11 +5,13 @@ A Discord bot that joins your voice channel and speaks using Kokoro TTS via a lo
 ---
 
 ### ✅ Features
+- `!WeCantTalk` — List all available commands
 - `!speak [message]` — Speak using the default voice
 - `!speakwith [voice] [message]` — Specify a voice to speak
 - `!listvoices` — List all available voices
 - `!stop` — Stop current playback
 - `!raid [channel_id] [message]` — Speak in a specified voice channel
+- `!setlang [language-code]` — Sets the language {'a': 'American English', 'b': 'British English', 'e': 'es', 'f': 'fr-fr', 'h': 'hi', 'i': 'it', 'p': 'pt-br', 'j': 'Japanese', 'z': 'Mandarin Chinese'}
 - Console support — Type messages directly into your terminal
 - Smart mention replacement (`@user` → display name)
 
@@ -19,9 +21,10 @@ A Discord bot that joins your voice channel and speaks using Kokoro TTS via a lo
 
 1. **Python 3.8+**
 2. **A running Kokoro-FastAPI container**
-   - We went with port 8880 so the code should match your settings, follow instructions here:  https://github.com/remsky/Kokoro-FastAPI
+   - We went with port 8880 so the code should match your settings, follow docker instructions here:  https://github.com/remsky/Kokoro-FastAPI
 3. **FFmpeg installed and accessible in PATH**
 4. A Discord Bot Token
+5. Adjustments to console-specific code for non-windows hosts
 
 ---
 
@@ -88,6 +91,7 @@ You’ll see a `Console>` prompt. You can type directly there or interact via Di
 
 - Bot joins voice but doesn’t speak? Ensure FFmpeg is correctly installed and audio is returned from the API.
 - Getting `400 Bad Request`? Confirm your voice name is valid with `!listvoices`.
+- Getting `500 Internal Server Error`? Confirm your language code is valid. 
 - No audio played? Make sure your Kokoro TTS container is running and reachable.
 
 ---
